@@ -140,6 +140,13 @@ def determine_flush_suit(sorted_iterable):
         if sorted_iterable.count(suit) == 5:
             return suit
 
+def is_game_over(table):
+    if len(table.active_players) == 1:
+        table.unfulfilled_action = []
+        return True
+    return False
+
+
 
 if __name__ == '__main__':
     player_instances = ['p0', 'p1', 'p2', 'p3', 'p4', 'p5', 'p6']
@@ -166,8 +173,3 @@ if __name__ == '__main__':
 
     print(final_list)
 
-def is_game_over(table):
-    if len(table.active_players) == 1:
-        table.unfulfilled_action = []
-        return True
-    return False

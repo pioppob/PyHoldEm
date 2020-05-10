@@ -89,7 +89,6 @@ class Player:
 
     def _check(self, table):
 
-        self.current_turn = False
         table.unfulfilled_action.remove(self)
         table.total_turns += 1
         table.last_move = self
