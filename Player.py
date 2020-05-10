@@ -38,7 +38,7 @@ class Player:
             for player in Player.instances:
                 if player.name == kwargs['name']:
                     return player
-        elif kwargs.get('id'):
+        elif kwargs.get('id') is not None:
             for player in Player.instances:
                 if player.id == kwargs['id']:
                     return player

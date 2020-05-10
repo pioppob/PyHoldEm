@@ -56,6 +56,19 @@ class Table:
             card = self.draw_card()
             self.community_cards.append(card)
 
+    def instantiate_players(self, players, username):
+
+        if players > 8:
+            raise Exception('This game supports a maximum of 8 players.')
+
+        for x in range(players):
+            if x == 0:
+                name = username
+                player = Player(name, 1000000)
+            else:
+                name = f'CPU {x}'
+                player = Player(name, 1000000)
+
     def determine_turn_order(self):
 
         turn_order = []
@@ -82,7 +95,7 @@ class Table:
 
     def turn_action_handler(self, initial):
 
-        user = Player.get_player(name='User')
+        user = Player.get_player(id=0)
 
         self.flop(initial=initial)
         turn_order = self.determine_turn_order()
@@ -132,7 +145,7 @@ class Table:
                 print('Error.', e),
                     
 
-        user = Player.get_player(name='User')
+        user = Player.get_player(id=0)
         players = self._get_active_players()
 
         winning_hand = self.community_cards[:] + list((winner.hand.first, winner.hand.second))

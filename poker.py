@@ -4,22 +4,16 @@ from Player import Player
 from Table import Table
 from maps import best_hand_map, rank_map, cpu_aggressiveness_map
 
-PLAYERS = 4
-
 def main_handler():
 
     table = Table()
 
+    PLAYERS = 4
+    USERNAME = 'User'
+
     while table.active_game:
 
-        for x in range(PLAYERS):
-            if x == 0:
-                name = f'User'
-                player = Player(name, 1000000)
-            else:
-                name = f'CPU {x}'
-                player = Player(name, 1000000)
-
+        table.instantiate_players(PLAYERS, USERNAME)
 
         table.deal()
 
