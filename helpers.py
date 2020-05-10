@@ -146,6 +146,37 @@ def is_game_over(table):
         return True
     return False
 
+def print_table(player, table):
+
+    for row in range(12):
+
+        if row in [0, 11]:
+            print('*' + '-'*98 + '*')
+            continue
+        elif row == 1:
+            line_to_print = str([player.name for player in table.active_players])
+        elif row == 5:
+            line_to_print = str(table.community_cards)
+        elif row == 6:
+            line_to_print = str(table.pot) + ' | ' + str(table.current_stake)
+        elif row == 9:
+            line_to_print = str(player.hand)
+        elif row == 10:
+            line_to_print = str(player.chips) + ' | ' + str(player.stake)
+        else:
+            print('|' + ' '*98 + '|')
+            continue
+        
+        print_line(line_to_print)
+
+def print_line(text_to_print):
+    filled_space = len(text_to_print)
+    unused_space = 100 - (filled_space + 2)
+    left_space = right_space = unused_space // 2
+    if not left_space + right_space + 2 + filled_space == 100:
+        right_space += 1
+    print('|'*1 + ' '*left_space + text_to_print + ' '*right_space + '|'*1)
+
 
 
 if __name__ == '__main__':

@@ -3,10 +3,11 @@ import random
 import logging
 import time
 import itertools
+import os
 from helpers import (
     is_royal, is_four_of_a_kind, is_full_house, is_flush,
     is_straight, is_three_of_a_kind, is_two_pair, is_one_pair,
-    determine_flush_suit, is_game_over
+    determine_flush_suit, is_game_over, print_table
 )
 
 class Player:
@@ -224,19 +225,21 @@ class Player:
         if is_game_over(table):
             return
 
-        print('--------YOUR TURN-------')
-        print('Active Players: ', [player.name for player in table.active_players])
-        # print('Turns: ', table.total_turns)
-        print('Table Pot: ', table.pot, ' | Table Stake: ', table.current_stake)
+        time.sleep(1)
+        os.system('clear')
+        print_table(self, table)
+        # print('--------YOUR TURN-------')
+        #         # # print('Turns: ', table.total_turns)
+        # print('Table Pot: ', table.pot, ' | Table Stake: ', table.current_stake)
         # print('Table Stake: ', table.current_stake)
-        print('Table Cards: ', table.community_cards)
-        # print('--------')
-        print('Your Hand: ', self.hand)
-        # print('Your Best Hand: ', self.best_hand)
-        # print('Your Calc Aggro: ', self.aggressiveness)
-        print('Your Total Chips: ', self.chips, ' | Your Stake: ', self.stake)
-        # print('Your Calc Bet: ', self.calculated_bet)
-        # print('Your Stake: ', self.stake)
+        # print('Table Cards: ', table.community_cards)
+        # # print('--------')
+        # print('Your Hand: ', self.hand)
+        # # print('Your Best Hand: ', self.best_hand)
+        # # print('Your Calc Aggro: ', self.aggressiveness)
+        # print('Your Total Chips: ', self.chips, ' | Your Stake: ', self.stake)
+        # # print('Your Calc Bet: ', self.calculated_bet)
+        # # print('Your Stake: ', self.stake)
 
         if self.stake >= table.current_stake:
 
@@ -259,6 +262,7 @@ class Player:
                 return
         
         elif self.stake < table.current_stake:
+            print(f'Current stake is at {table.current_stake}.')
             response = input('Would you like to call, raise, or fold? >> ')
             responses = ['call', 'raise', 'fold']
             if not response in responses:

@@ -2,6 +2,7 @@ import itertools
 import random
 from collections import namedtuple
 import logging
+import os
 from Player import Player
 from maps import best_hand_map, rank_map, cpu_aggressiveness_map
 
@@ -39,9 +40,8 @@ class Table:
         print('There are players that still need to take action.')
 
     def deal(self):
-        Hand = namedtuple('Hand', 'first second')
         for player in Player.instances:
-            player.hand = Hand(first=self.draw_card(), second=self.draw_card())
+            player.hand = [self.draw_card(), self.draw_card()]
             self.active_players.append(player)
             player.chips -= 50
             self.pot += 50
@@ -98,6 +98,7 @@ class Table:
         user = Player.get_player(id=0)
 
         self.flop(initial=initial)
+        
         turn_order = self.determine_turn_order()
 
         for player in turn_order:
@@ -148,7 +149,7 @@ class Table:
         user = Player.get_player(id=0)
         players = self._get_active_players()
 
-        winning_hand = self.community_cards[:] + list((winner.hand.first, winner.hand.second))
+        winning_hand = self.community_cards[:] + winner.hand
  
         if winner in players and not winner == user:
             print(f'{winner} won the pot! Winnings: {self.pot}. Best Hand: {best_hand_map[winner.best_hand]}.')
