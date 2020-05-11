@@ -2,31 +2,25 @@ import logging
 import os
 from Player import Player
 from Table import Table
+import time
 from maps import best_hand_map, rank_map, cpu_aggressiveness_map
 
-def main_handler():
+def main_handler(connections, players):
+    print('Starting game!')
 
     table = Table()
 
-    PLAYERS = 4
-    USERNAME = 'User'
-
-    while table.active_game:
-
-        table.instantiate_players(PLAYERS, USERNAME)
-
-        table.deal()
-
-        table.turn_action_handler(True)
-        table.turn_action_handler(False)
-        table.turn_action_handler(False)
-
-        return table.determine_winner()
+    print(connections)
+    print(players)
+    print(table)
 
 
 if __name__ == '__main__':
 
     os.system('clear')
+
+    PLAYERS = 4
+    USERNAME = 'User'
 
     logging.basicConfig(
         format='%(asctime)s %(levelname)s %(message)s', 
@@ -35,7 +29,7 @@ if __name__ == '__main__':
         level=logging.DEBUG
     )
 
-    main_handler()
+    main_handler(PLAYERS, USERNAME)
 
 
 

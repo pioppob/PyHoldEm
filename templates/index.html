@@ -1,0 +1,49 @@
+<script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js" integrity="sha256-yr4fRk/GU1ehYJPAs8P4JlTgu0Hdsp4ZKrx8bDEDC3I=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/node-uuid/1.4.8/uuid.min.js"></script>
+<script type="text/javascript" charset="utf-8">
+
+    var socket = io();
+
+    let active_connections = [];
+
+    socket.on('connect', function(req) {
+        username = prompt('What is your username?')
+
+        socket.emit('register username', {
+            id: uuid.v4(),
+            username: username
+        });
+    });
+
+    socket.on('disconnect', function() {
+        socket.emit('disconnect');
+    });
+
+    function check() {
+        socket.emit('check', {
+            message: 'I check'
+        })
+    }
+
+    function raise() {
+        socket.emit('raise', {
+            message: 'I raise'
+        })
+    }
+
+    function fold() {
+        socket.emit('fold', {
+            message: 'I fold'
+        })
+    }
+
+    socket.on('message', function(message) {
+        console.log('Received message: ', message)
+    })
+</script>
+
+<h1>Hello!</h1>
+
+<button onclick="check()">Check</button>
+<button onclick="raise()">Raise</button>
+<button onclick="fold()">Fold</button>
