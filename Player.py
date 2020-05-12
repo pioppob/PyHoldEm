@@ -15,8 +15,8 @@ class Player:
     id_counter = itertools.count()
     instances = []
 
-    def __init__(self, name, chips):
-        self.id = next(Player.id_counter)
+    def __init__(self, id, name, chips):
+        self.id = id
         self.name = name
         self.chips = chips
         self.hand = None
@@ -225,9 +225,9 @@ class Player:
         if is_game_over(table):
             return
 
-        time.sleep(1)
-        os.system('clear')
-        print_table(self, table)
+        # time.sleep(1)
+        # os.system('clear')
+        # print_table(self, table)
         # print('--------YOUR TURN-------')
         #         # # print('Turns: ', table.total_turns)
         # print('Table Pot: ', table.pot, ' | Table Stake: ', table.current_stake)

@@ -5,19 +5,93 @@
     var socket = io();
 
     let active_connections = [];
+    let hand = null
 
-    socket.on('connect', function(req) {
+    socket.on('connect', function() {
+        console.log('connection')
+
         username = prompt('What is your username?')
 
-        socket.emit('register username', {
+        const userData = {
             id: uuid.v4(),
-            username: username
-        });
+            username: username,
+        }
+
+        socket.emit('backend handshake', userData);
     });
 
-    socket.on('disconnect', function() {
-        socket.emit('disconnect');
-    });
+    socket.on('frontend handshake', function(userData) {
+
+        localStorage.setItem('userData', JSON.stringify(userData))
+        socket.emit('register user', userData)
+    })
+
+    socket.on('deal', function(player) {
+        console.log('in deal handler')
+
+        userData = JSON.parse(localStorage.getItem('userData'))
+
+        updateDiv('hand', player.attributes.hand)
+        updateDiv('yourStake', player.attributes.stake)
+        updateDiv('yourChips', player.attributes.chips)
+        
+    })
+
+    socket.on('flop', function(flop_data) {
+
+        let active_players = []
+        
+        updateDiv('community', flop_data.cards)
+        updateDiv('pot', flop_data.pot)
+        updateDiv('table-stake', flop_data.current_stake)
+        flop_data.active_players.forEach(player => {
+            active_players.push(player.name)
+        })
+        updateDiv('activePlayers', active_players)
+
+    })
+
+    socket.on('ua', function(turn_data) {
+        let turn_order = []
+        let ua = []
+
+        turn_data.turn_order.forEach(player => {
+            turn_order.push(player.name)
+        })
+        turn_data.ua.forEach(player => {
+            ua.push(player.name)
+        })
+        updateDiv('turn-order', turn_order)
+        updateDiv('ua', ua)
+        updateDiv('whos-turn', turn_data.whos_turn.name)
+
+    })
+
+    socket.on('cleanup', function(turn_data) {
+
+        updateDiv('turn-order', ' ')
+        updateDiv('ua', ' ')
+        updateDiv('whos-turn', ' ')
+
+    })
+
+    socket.on('toggle-display', function(display_data) {
+        let display_type = display_data.display_type
+
+        if (display_type == 'one') {
+            document.getElementById('display-one').style.display = 'block';
+        } else if (display_type == 'two') {
+            document.getElementById('display-two').style.display = 'block';
+        } else if (display_type == 'three') {
+            document.getElementById('display-one').style.display = 'none';
+            document.getElementById('display-two').style.display = 'none';
+        }
+    })
+
+    function updateDiv(idName, dataSource) {
+        div = document.getElementById(idName)
+        div.innerHTML = dataSource.toString()
+    }
 
     function check() {
         socket.emit('check', {
@@ -26,8 +100,9 @@
     }
 
     function raise() {
+        raise_amount = prompt('How much would you like to raise?')
         socket.emit('raise', {
-            message: 'I raise'
+            raise_amount: raise_amount
         })
     }
 
@@ -37,13 +112,44 @@
         })
     }
 
+    function call() {
+        socket.emit('call', {
+            message: 'I call'
+        })
+    }
+
     socket.on('message', function(message) {
         console.log('Received message: ', message)
     })
+
+    socket.on('disconnect', function() {
+        socket.emit('disconnect');
+    });
 </script>
 
-<h1>Hello!</h1>
+<h1>PyHoldEm</h1>
 
-<button onclick="check()">Check</button>
-<button onclick="raise()">Raise</button>
-<button onclick="fold()">Fold</button>
+<p>Active Players: <span id="activePlayers"></span></p>
+<hr>
+<p>Community Cards: <span id="community"></span></p>
+<p>Table Pot: <span id="pot"></span> | Table Stake: <span id="table-stake"></span></p>
+
+<hr>
+<p>Your Hand: <span id="hand"></span></p>
+<p>Your Chips: <span id="yourChips"></span> | Your Stake: <span id="yourStake"></span></p>
+<hr>
+<p>Turn Order: <span id='turn-order'></span></p>
+<p>UA: <span id='ua'></span></p>
+<p>It's <span id='whos-turn'></span>'s turn.</p>
+
+<div id="display-one" style="display: none;">
+    <button onclick="check()">Check</button>
+    <button onclick="raise()">Raise</button>
+    <button onclick="fold()">Fold</button>
+</div>
+
+<div id="display-two" style="display: none;">
+    <button onclick="call()">Check</button>
+    <button onclick="raise()">Raise</button>
+    <button onclick="fold()">Fold</button>
+</div>

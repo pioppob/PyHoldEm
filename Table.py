@@ -4,12 +4,15 @@ from collections import namedtuple
 import logging
 import os
 from Player import Player
+import time
 from maps import best_hand_map, rank_map, cpu_aggressiveness_map
+from flask_socketio import emit, send
 
 class Table:
 
     SUITS=['DIAMONDS', 'SPADES', 'HEARTS', 'CLUBS']
     RANKS=list(range(2, 11)) + list('JQKA')
+    instances = []
 
     def __init__(self):
         self.deck = list(itertools.product(self.RANKS, self.SUITS))
@@ -22,6 +25,7 @@ class Table:
         self.total_turns = 0
         self.active_game = True
         self.last_move = None
+        Table.instances.append(self)
 
     def draw_card(self):
         card = random.choice(self.available_cards)
@@ -56,18 +60,16 @@ class Table:
             card = self.draw_card()
             self.community_cards.append(card)
 
-    def instantiate_players(self, players, username):
+    def instantiate_players(self, connections):
 
-        if players > 8:
+        if len(connections) > 8:
             raise Exception('This game supports a maximum of 8 players.')
 
-        for x in range(players):
-            if x == 0:
-                name = username
-                player = Player(name, 1000000)
-            else:
-                name = f'CPU {x}'
-                player = Player(name, 1000000)
+        for connection in connections:
+            name = connection['username']
+            id = connection['sid']
+            player = Player(id, name, 1000000)
+            print('Player created: ', player)
 
     def determine_turn_order(self):
 
@@ -84,21 +86,25 @@ class Table:
 
             if player in self.active_players:
 
-                if not player == self.last_move:
+                if player in self.unfulfilled_action:
+                    continue
 
-                    if player in self.unfulfilled_action:
-                        continue
-
-                    turn_order.append(player)
+                turn_order.append(player)
 
         return turn_order
 
     def turn_action_handler(self, initial):
 
-        user = Player.get_player(id=0)
-
         self.flop(initial=initial)
-        
+
+        emit('flop', {
+            'initial': initial,
+            'cards': self.__dict__['community_cards'],
+            'pot': self.__dict__['pot'],
+            'current_stake': self.__dict__['current_stake'],
+            'active_players': [player.__dict__ for player in self.__dict__['active_players']]
+        }, broadcast=True)
+
         turn_order = self.determine_turn_order()
 
         for player in turn_order:
@@ -106,16 +112,30 @@ class Table:
 
         while self.unfulfilled_action:
 
-            # Never modify a list while iterating
-            copy_of_ua_list = self.unfulfilled_action[:]
+            time.sleep(.1)
+            try:
+                action_required = self.unfulfilled_action[0]
+            except IndexError:
+                break
 
-            for player in copy_of_ua_list:
+            emit('ua', {
+                'turn_order': [player.__dict__ for player in turn_order],
+                'ua': [player.__dict__ for player in self.unfulfilled_action],
+                'whos_turn': action_required.__dict__
+            }, broadcast=True)
 
-                if player == user:
-                    player.user_take_turn(self)
-                else:
-                    player.simulate_cpu_turn(self)
+            if action_required.stake >= self.current_stake:
 
+                emit('toggle-display', {
+                    'display_type': 'one'
+                }, room=action_required.id)
+
+            elif action_required.stake < self.current_stake:
+
+                emit('toggle-display', {
+                    'display_type': 'two'
+                }, room=action_required.id)
+          
         self.reset_stakes()
                 
 
