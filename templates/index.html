@@ -51,6 +51,30 @@
 
     })
 
+    socket.on('winner', function(winner_data) {
+        document.getElementById('turn-order-p').style.display = 'none';
+        document.getElementById('ua-p').style.display = 'none';
+        document.getElementById('whos-turn-p').style.display = 'none';
+        document.getElementById('display-one').style.display = 'none';
+        document.getElementById('display-two').style.display = 'none';
+        updateDiv('winner', winner_data.winner.name)
+        updateDiv('winnings', winner_data.winnings)
+        updateDiv('best_hand', winner_data.best_hand)
+        document.getElementById('winning-banner').style.display = 'block';
+    })
+
+    socket.on('tie-winners', function(winner_data) {
+        document.getElementById('turn-order-p').style.display = 'none';
+        document.getElementById('ua-p').style.display = 'none';
+        document.getElementById('whos-turn-p').style.display = 'none';
+        document.getElementById('display-one').style.display = 'none';
+        document.getElementById('display-two').style.display = 'none';
+        updateDiv('winner-1', winner_data.winner1.name)
+        updateDiv('winner-2', winner_data.winner2.name)
+        updateDiv('half-pot', winner_data.winnings)
+        document.getElementById('tie-winning-banner').style.display = 'block';
+    })
+
     socket.on('ua', function(turn_data) {
         let turn_order = []
         let ua = []
@@ -138,9 +162,12 @@
 <p>Your Hand: <span id="hand"></span></p>
 <p>Your Chips: <span id="yourChips"></span> | Your Stake: <span id="yourStake"></span></p>
 <hr>
-<p>Turn Order: <span id='turn-order'></span></p>
-<p>UA: <span id='ua'></span></p>
-<p>It's <span id='whos-turn'></span>'s turn.</p>
+<p id="turn-order-p">Turn Order: <span id='turn-order'></span></p>
+<p id="ua-p">UA: <span id='ua'></span></p>
+<p id="whos-turn-p">It's <span id='whos-turn'></span>'s turn.</p>
+<p id="winning-banner" style="display: none;"><span id="winner"></span> won the pot! Winnings: <span id="winnings"></span>. Best Hand: <span id="best_hand"></span></p>
+
+<p id="tie-winning-banner" style="display: none;">Tie! <span id="winner-1"></span> and <span id="winner-2"></span> will split the pot at <span id="half-pot"></span> chips each.</p>
 
 <div id="display-one" style="display: none;">
     <button onclick="check()">Check</button>
@@ -149,7 +176,7 @@
 </div>
 
 <div id="display-two" style="display: none;">
-    <button onclick="call()">Check</button>
+    <button onclick="call()">Call</button>
     <button onclick="raise()">Raise</button>
     <button onclick="fold()">Fold</button>
 </div>

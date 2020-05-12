@@ -68,7 +68,7 @@ class Player:
         table.last_move = self
         table.unfulfilled_action.remove(self)
 
-        turn_order = table.determine_turn_order()
+        turn_order = table.determine_turn_order(raised=True)
         table.unfulfilled_action.extend(turn_order)
 
         print(f'{self} raised {amount_to_raise} chips!')

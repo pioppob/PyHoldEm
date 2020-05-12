@@ -71,7 +71,7 @@ class Table:
             player = Player(id, name, 1000000)
             print('Player created: ', player)
 
-    def determine_turn_order(self):
+    def determine_turn_order(self, raised=False):
 
         turn_order = []
 
@@ -86,10 +86,16 @@ class Table:
 
             if player in self.active_players:
 
-                if player in self.unfulfilled_action:
-                    continue
+                if not player == self.last_move:
 
-                turn_order.append(player)
+                    if player in self.unfulfilled_action:
+                        continue
+
+                    turn_order.append(player)
+
+        if not raised:
+            if self.last_move in self.active_players:
+                turn_order.append(self.last_move)
 
         return turn_order
 
@@ -97,20 +103,23 @@ class Table:
 
         self.flop(initial=initial)
 
-        emit('flop', {
-            'initial': initial,
-            'cards': self.__dict__['community_cards'],
-            'pot': self.__dict__['pot'],
-            'current_stake': self.__dict__['current_stake'],
-            'active_players': [player.__dict__ for player in self.__dict__['active_players']]
-        }, broadcast=True)
-
-        turn_order = self.determine_turn_order()
+        turn_order = self.determine_turn_order(raised=False)
 
         for player in turn_order:
             self.unfulfilled_action.append(player)
 
         while self.unfulfilled_action:
+
+            if len(self.active_players) == 1:
+                break
+
+            emit('flop', {
+                'initial': initial,
+                'cards': self.__dict__['community_cards'],
+                'pot': self.__dict__['pot'],
+                'current_stake': self.__dict__['current_stake'],
+                'active_players': [player.__dict__ for player in self.__dict__['active_players']]
+            }, broadcast=True)
 
             time.sleep(.1)
             try:
@@ -142,6 +151,19 @@ class Table:
 
     def determine_winner(self):
 
+        if len(self.active_players) == 1:
+            winner = self.active_players[0]
+            winner._determine_best_hand(self)
+            emit('winner', {
+                'winner': winner.__dict__,
+                'winnings': self.pot,
+                'best_hand': best_hand_map[winner.best_hand]
+            }, broadcast=True)
+            self._end_game()
+            return
+        
+
+
         winner = None
         best_hand = None
 
@@ -171,24 +193,28 @@ class Table:
 
         winning_hand = self.community_cards[:] + winner.hand
  
-        if winner in players and not winner == user:
-            print(f'{winner} won the pot! Winnings: {self.pot}. Best Hand: {best_hand_map[winner.best_hand]}.')
-            print(f'Winning hand: {winning_hand}!')
-        elif winner in players and winner == user:
-            print(f'You won the pot! Winnings: {self.pot}. Best Hand: {best_hand_map[user.best_hand]}.')
-            print(f'Winning hand: {winning_hand}!')
+        if winner in players:
+            emit('winner', {
+                'winner': winner.__dict__,
+                'winnings': self.pot,
+                'best_hand': best_hand_map[winner.best_hand]
+            }, broadcast=True)
         elif len(winner) == 2:
             half_pot = self.pot // 2
             winner[0].chips += half_pot
             winner[1].chips += half_pot
             self.pot = 0
+            emit('tie-winners', {
+                'winner1': winner[0].__dict__,
+                'winner2': winner[1].__dict__,
+                'winnings': half_pot,
+            }, broadcast=True)
             print(f'Tie! {winner[0]} and {winner[1]} will split the pot at {half_pot} chips each.')
 
         self._end_game()
 
     def _end_game(self):
         self.unfulfilled_action = None
-        self.active_players = None
         self.active_game = False
 
     def _get_active_players(self):

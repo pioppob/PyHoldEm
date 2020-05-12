@@ -33,10 +33,8 @@ def main_handler(connections, num_players):
         table.turn_action_handler(False)
         table.turn_action_handler(False)
 
-        break
-        
+        return table.determine_winner()
 
-    print('3 turns taken')
 
 
 
