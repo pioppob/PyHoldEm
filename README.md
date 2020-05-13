@@ -1,12 +1,12 @@
 # PyHoldEm
 A Texas Hold'Em Game built in Python
 
+![Frontend](https://github.com/pioppob/PyHoldEm/blob/Multiplayer/static/demo.png)
+
 How to play:
 1. Clone this repository to your local machine. (git clone https:// ...)
 2. Change directory (cd) to the PyHoldEm directory.
 3. Run python3 poker.py
-
-![Frontend](https://github.com/pioppob/PyHoldEm/blob/Multiplayer/static/demo.png)
 
 # Understanding the table
 The poker table is displayed during your turn sequence. At the top, the active players are displayed. In the center of the table, the community cards are displayed with the current table pot and the current stake. If the current stake is not zero, you'll be prompted to call, raise or fold. You cannot check when the table stake is not zero.
