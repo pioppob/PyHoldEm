@@ -97,7 +97,8 @@ def on_check(data):
     player._check(table)
 
     emit('toggle-display', {
-        'display_type': 'three'
+        'display_type': 'three',
+        'attributes': player.__dict__
     }, room=player.id)
 
     send(username + ' has checked!', broadcast=True)
@@ -112,7 +113,8 @@ def on_fold(data):
     player._fold(table)
 
     emit('toggle-display', {
-        'display_type': 'three'
+        'display_type': 'three',
+        'attributes': player.__dict__
     }, room=player.id)
 
     send(username + ' has folded!', broadcast=True)
@@ -128,7 +130,8 @@ def on_raise(data):
     player._raise(table, int(amount_to_raise))
 
     emit('toggle-display', {
-        'display_type': 'three'
+        'display_type': 'three',
+        'attributes': player.__dict__
     }, room=player.id)
 
     send(username + ' has raised!', broadcast=True)
@@ -143,7 +146,8 @@ def on_call(data):
     player._call(table)
 
     emit('toggle-display', {
-        'display_type': 'three'
+        'display_type': 'three',
+        'attributes': player.__dict__
     }, room=player.id)
 
     send(username + ' has called!', broadcast=True)

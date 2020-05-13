@@ -25,6 +25,7 @@ class Table:
         self.total_turns = 0
         self.active_game = True
         self.last_move = None
+        self.flop_count = 0
         Table.instances.append(self)
 
     def draw_card(self):
@@ -102,6 +103,7 @@ class Table:
     def turn_action_handler(self, initial):
 
         self.flop(initial=initial)
+        self.flop_count += 1
 
         turn_order = self.determine_turn_order(raised=False)
 
@@ -115,6 +117,7 @@ class Table:
 
             emit('flop', {
                 'initial': initial,
+                'flop_count': self.flop_count,
                 'cards': self.__dict__['community_cards'],
                 'pot': self.__dict__['pot'],
                 'current_stake': self.__dict__['current_stake'],
