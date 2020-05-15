@@ -23,7 +23,7 @@ class Table:
         self.active_players = []
         self.unfulfilled_action = []
         self.total_turns = 0
-        self.active_game = True
+        self.active_game = False
         self.last_move = None
         self.flop_count = 0
         Table.instances.append(self)
@@ -121,7 +121,7 @@ class Table:
                 'cards': self.__dict__['community_cards'],
                 'pot': self.__dict__['pot'],
                 'current_stake': self.__dict__['current_stake'],
-                'active_players': [player.__dict__ for player in self.__dict__['active_players']]
+                'active_players': ', '.join([player.name for player in self.__dict__['active_players']])
             }, broadcast=True)
 
             time.sleep(.1)
@@ -130,9 +130,7 @@ class Table:
             except IndexError:
                 break
 
-            emit('ua', {
-                'turn_order': [player.__dict__ for player in turn_order],
-                'ua': [player.__dict__ for player in self.unfulfilled_action],
+            emit('turn-order', {
                 'whos_turn': action_required.__dict__
             }, broadcast=True)
 
@@ -219,6 +217,7 @@ class Table:
     def _end_game(self):
         self.unfulfilled_action = None
         self.active_game = False
+        emit('restart-game')
 
     def _get_active_players(self):
         return self.active_players

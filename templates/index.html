@@ -1,16 +1,12 @@
 <script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js" integrity="sha256-yr4fRk/GU1ehYJPAs8P4JlTgu0Hdsp4ZKrx8bDEDC3I=" crossorigin="anonymous"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/node-uuid/1.4.8/uuid.min.js"></script>
-<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
-<link href='https://fonts.googleapis.com/css?family=Fredoka+One' rel='stylesheet' type='text/css'>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/node-uuid/1.4.8/uuid.min.js"></script> 
 <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+
 <script type="text/javascript" charset="utf-8">
 
-    var socket = io();
-
-    let active_connections = [];
-    let hand = null
+    const socket = io();
 
     const suits_map = {
         'HEARTS': '&hearts;',
@@ -20,9 +16,9 @@
     }
 
     socket.on('connect', function() {
-        console.log('connection')
+        console.log('Incoming connection.')
 
-        username = prompt('What is your username?')
+        username = validateUsername();
 
         const userData = {
             id: uuid.v4(),
@@ -33,9 +29,18 @@
     });
 
     socket.on('frontend handshake', function(userData) {
-
-        localStorage.setItem('userData', JSON.stringify(userData))
         socket.emit('register user', userData)
+    })
+
+    socket.on('queue-add', function(data) {
+        let remaining_connections = (3 - data.num_connections)
+
+        updateDiv('activePlayers', data.active_connections)
+        updateDiv('remaining-connections', remaining_connections)
+    })
+
+    socket.on('wait-notif', function() {
+        document.getElementById('wait-notif').style.display = 'block'
     })
 
     socket.on('deal', function(player) {
@@ -45,28 +50,13 @@
         let pocket_1 = player.attributes.hand[0]
         let pocket_2 = player.attributes.hand[1]
         updateCard(pocket_1, 1, 'pocket', 'pocket-1')    
-        updateCard(pocket_2, 2, 'pocket', 'pocket-2')    
+        updateCard(pocket_2, 2, 'pocket', 'pocket-2') 
+        document.getElementById('user-chips').style.display = 'block'   
     })
 
-    function updateCard(card, card_num, card_type, divID) {
-        const rank = card[0]
-        const suit = suits_map[card[1]]
-
-        if ((suit == '&diams;') || (suit == '&hearts;')) {
-            card = document.getElementById(divID);
-            card.classList.add('red');
-        }
-
-        updateDiv(`${card_type}-${card_num.toString()}-rank-1`, rank)
-        updateDiv(`${card_type}-${card_num.toString()}-suit-1`, suit)
-        updateDiv(`${card_type}-${card_num.toString()}-suit-2`, suit)
-        updateDiv(`${card_type}-${card_num.toString()}-suit-3`, suit)
-        updateDiv(`${card_type}-${card_num.toString()}-rank-2`, rank)
-
-        document.getElementById(divID).style.display = 'inline-block';
-    }
-
     socket.on('flop', function(flop_data) {
+
+        console.log(flop_data)
 
         let active_players = []
         
@@ -74,30 +64,13 @@
 
         updateDiv('pot', flop_data.pot)
         updateDiv('table-stake', flop_data.current_stake)
-        flop_data.active_players.forEach(player => {
-            active_players.push(player.name)
-        })
-        updateDiv('activePlayers', active_players)
+        updateDiv('activePlayers', flop_data.active_players)
+        document.getElementById('wait-time').style.display = 'none';
+        document.getElementById('wait-banner').style.display = 'none';
         document.getElementById('whos-turn-p').style.display = 'block';
+        document.getElementById('table-chips').style.display = 'block';
 
     })
-
-    function updateCommunityCards(community_cards, flop_num) {
-
-        console.log('In correct handler')
-
-        if (flop_num == 1) {
-            updateCard(community_cards[0], 1, 'community', 'community-1')
-            updateCard(community_cards[1], 2, 'community', 'community-2')
-            updateCard(community_cards[2], 3, 'community', 'community-3') 
-        } else if (flop_num == 2) {
-            updateCard(community_cards[3], 4, 'community', 'community-4') 
-
-        } else if (flop_num == 3) {
-            updateCard(community_cards[4], 5, 'community', 'community-5') 
-        }
-
-    }
 
     socket.on('winner', function(winner_data) {
         document.getElementById('whos-turn-p').style.display = 'none';
@@ -117,26 +90,43 @@
         document.getElementById('tie-winning-banner').style.display = 'block';
     })
 
-    socket.on('ua', function(turn_data) {
-        // let turn_order = []
-        // let ua = []
+    socket.on('restart-game', function() {
+        socket.emit('restart-game')
+    })
 
-        // turn_data.turn_order.forEach(player => {
-        //     turn_order.push(player.name)
-        // })
-        // turn_data.ua.forEach(player => {
-        //     ua.push(player.name)
-        // })
-        // updateDiv('turn-order', turn_order)
-        // updateDiv('ua', ua)
+    socket.on('game-cleanup', function() {
+        document.getElementById('wait-time').style.display = 'block';
+        document.getElementById('wait-notif').style.display = 'none';
+        document.getElementById('winning-banner').style.display = 'none';
+        document.getElementById('tie-winning-banner').style.display = 'none';
+        document.getElementById('table-chips').style.display = 'none';
+        document.getElementById('user-chips').style.display = 'none';
+
+        const cleanupCards = [
+            'pocket-1',
+            'pocket-2',
+            'community-1',
+            'community-2',
+            'community-3',
+            'community-4',
+            'community-5'
+        ]
+
+        for (let card of cleanupCards) {
+            div = document.getElementById(card)
+            div.style.display = 'none';
+            div.classList.remove('red')
+        }
+    })
+
+    socket.on('turn-order', function(turn_data) {
+
         updateDiv('whos-turn', turn_data.whos_turn.name)
 
     })
 
     socket.on('cleanup', function(turn_data) {
 
-        // updateDiv('turn-order', ' ')
-        // updateDiv('ua', ' ')
         updateDiv('whos-turn', ' ')
 
     })
@@ -156,6 +146,59 @@
         }
 
     })
+
+    socket.on('message', function(message) {
+        console.log('Received message: ', message)
+    })
+
+    socket.on('disconnect', function() {
+        socket.emit('disconnect');
+    });
+
+    function validateUsername() {
+
+        let username = prompt('What is your username?')
+
+        if ((username == null) || (username.length < 1)) {
+            alert('Invalid username. Disconnecting.')
+            socket.disconnect();
+        }
+
+        return username
+    }
+
+    function updateCommunityCards(community_cards, flop_num) {
+
+        if (flop_num == 1) {
+            updateCard(community_cards[0], 1, 'community', 'community-1')
+            updateCard(community_cards[1], 2, 'community', 'community-2')
+            updateCard(community_cards[2], 3, 'community', 'community-3') 
+        } else if (flop_num == 2) {
+            updateCard(community_cards[3], 4, 'community', 'community-4') 
+
+        } else if (flop_num == 3) {
+            updateCard(community_cards[4], 5, 'community', 'community-5') 
+        }
+
+    }
+
+    function updateCard(card, card_num, card_type, divID) {
+        const rank = card[0]
+        const suit = suits_map[card[1]]
+
+        if ((suit == '&diams;') || (suit == '&hearts;')) {
+            card = document.getElementById(divID);
+            card.classList.add('red');
+        }
+
+        updateDiv(`${card_type}-${card_num.toString()}-rank-1`, rank)
+        updateDiv(`${card_type}-${card_num.toString()}-suit-1`, suit)
+        updateDiv(`${card_type}-${card_num.toString()}-suit-2`, suit)
+        updateDiv(`${card_type}-${card_num.toString()}-suit-3`, suit)
+        updateDiv(`${card_type}-${card_num.toString()}-rank-2`, rank)
+
+        document.getElementById(divID).style.display = 'inline-block';
+    }
 
     function updateDiv(idName, dataSource) {
         div = document.getElementById(idName)
@@ -187,260 +230,273 @@
         })
     }
 
-    socket.on('message', function(message) {
-        console.log('Received message: ', message)
-    })
-
-    socket.on('disconnect', function() {
-        socket.emit('disconnect');
-    });
 </script>
 
-<!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-</head>
-<body>
-        <h1>PyHoldEm</h1>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+        <title>Document</title>
+    </head>
+    <body>
+            <h1>PyHoldEm</h1>
 
-        <p>Active Players: <span id="activePlayers"></span></p>
-        <hr>
-        <h4 id="whos-turn-p">It's <span id='whos-turn' class="red"></span>'s turn.</h4>
-        <h2 id="winning-banner" style="display: none;"><span id="winner" class="red"></span> won the pot!</h2>
-        <h2 id="tie-winning-banner" style="display: none;">Tie! <span class="red" id="winner-1"></span> and <span class="red" id="winner-2"></span> will split the pot at <span id="half-pot"></span> chips each.</h2>
+            <p>Active Players: <span id="activePlayers"></span></p>
+            <hr>
+            <h2 id="wait-banner">Waiting for <span id="remaining-connections" class="red">3</span> more players.</h2>
+            <h4 id="wait-notif">Please wait until the current game ends.</h4>
+            <h5 id="wait-time">New game in 3 seconds.</h5>
+            <h4 id="whos-turn-p">It's <span id='whos-turn' class="red"></span>'s turn.</h4>
+            <h2 id="winning-banner" style="display: none;"><span id="winner" class="red"></span> won the pot!</h2>
+            <h2 id="tie-winning-banner" style="display: none;">Tie! <span class="red" id="winner-1"></span> and <span class="red" id="winner-2"></span> will split the pot at <span id="half-pot"></span> chips each.</h2>
 
-        <div class="active-players"></div>
+            <div class="active-players"></div>
 
 
-        <div class="community-cards">
-            <div id="community-1" class="outline shadow rounded">
-                <div class="top">
-                    <span id="community-1-rank-1">A</span>
-                    <span id="community-1-suit-1">&hearts;</span>
+            <div class="community-cards">
+                <div id="community-1" class="outline shadow rounded">
+                    <div class="top">
+                        <span id="community-1-rank-1">A</span>
+                        <span id="community-1-suit-1">&hearts;</span>
+                    </div>
+                
+                    <h1 id="community-1-suit-2">&hearts;</h1>
+                
+                    <div class="bottom">
+                        <span id="community-1-suit-3">&hearts;</span>
+                        <span id="community-1-rank-2">A</span>
+                    </div>
                 </div>
-            
-                <h1 id="community-1-suit-2">&hearts;</h1>
-            
-                <div class="bottom">
-                    <span id="community-1-suit-3">&hearts;</span>
-                    <span id="community-1-rank-2">A</span>
+                <div id="community-2" class="outline shadow rounded">
+                    <div class="top">
+                        <span id="community-2-rank-1">A</span>
+                        <span id="community-2-suit-1">&hearts;</span>
+                    </div>
+                
+                    <h1 id="community-2-suit-2">&hearts;</h1>
+                
+                    <div class="bottom">
+                        <span id="community-2-suit-3">&hearts;</span>
+                        <span id="community-2-rank-2">A</span>
+                    </div>
+                </div>
+                <div id="community-3" class="outline shadow rounded">
+                    <div class="top">
+                        <span id="community-3-rank-1">A</span>
+                        <span id="community-3-suit-1">&hearts;</span>
+                    </div>
+                
+                    <h1 id="community-3-suit-2">&hearts;</h1>
+                
+                    <div class="bottom">
+                        <span id="community-3-suit-3">&hearts;</span>
+                        <span id="community-3-rank-2">A</span>
+                    </div>
+                </div>
+                <div id="community-4" class="outline shadow rounded">
+                    <div class="top">
+                        <span id="community-4-rank-1">A</span>
+                        <span id="community-4-suit-1">&hearts;</span>
+                    </div>
+                
+                    <h1 id="community-4-suit-2">&hearts;</h1>
+                
+                    <div class="bottom">
+                        <span id="community-4-suit-3">&hearts;</span>
+                        <span id="community-4-rank-2">A</span>
+                    </div>
+                </div>
+                <div id="community-5" class="outline shadow rounded">
+                    <div class="top">
+                        <span id="community-5-rank-1">A</span>
+                        <span id="community-5-suit-1">&hearts;</span>
+                    </div>
+                
+                    <h1 id="community-5-suit-2">&hearts;</h1>
+                
+                    <div class="bottom">
+                        <span id="community-5-suit-3">&hearts;</span>
+                        <span id="community-5-rank-2">A</span>
+                    </div>
+                </div>
+                <br>
+                <div id="table-chips">
+                    <img height="20px" width="20px" src="../static/poker-token.png" alt=""> 
+                    <span id="pot">null</span> | 
+                    <img height="20px" width="20px" src="../static/poker-piece.png" alt=""> 
+                    <span id="table-stake">null</span></p>
                 </div>
             </div>
-            <div id="community-2" class="outline shadow rounded">
-                <div class="top">
-                    <span id="community-2-rank-1">A</span>
-                    <span id="community-2-suit-1">&hearts;</span>
-                </div>
-            
-                <h1 id="community-2-suit-2">&hearts;</h1>
-            
-                <div class="bottom">
-                    <span id="community-2-suit-3">&hearts;</span>
-                    <span id="community-2-rank-2">A</span>
-                </div>
-            </div>
-            <div id="community-3" class="outline shadow rounded">
-                <div class="top">
-                    <span id="community-3-rank-1">A</span>
-                    <span id="community-3-suit-1">&hearts;</span>
-                </div>
-            
-                <h1 id="community-3-suit-2">&hearts;</h1>
-            
-                <div class="bottom">
-                    <span id="community-3-suit-3">&hearts;</span>
-                    <span id="community-3-rank-2">A</span>
-                </div>
-            </div>
-            <div id="community-4" class="outline shadow rounded">
-                <div class="top">
-                    <span id="community-4-rank-1">A</span>
-                    <span id="community-4-suit-1">&hearts;</span>
-                </div>
-            
-                <h1 id="community-4-suit-2">&hearts;</h1>
-            
-                <div class="bottom">
-                    <span id="community-4-suit-3">&hearts;</span>
-                    <span id="community-4-rank-2">A</span>
-                </div>
-            </div>
-            <div id="community-5" class="outline shadow rounded">
-                <div class="top">
-                    <span id="community-5-rank-1">A</span>
-                    <span id="community-5-suit-1">&hearts;</span>
-                </div>
-            
-                <h1 id="community-5-suit-2">&hearts;</h1>
-            
-                <div class="bottom">
-                    <span id="community-5-suit-3">&hearts;</span>
-                    <span id="community-5-rank-2">A</span>
-                </div>
-            </div>
-            <br>
-            <div class="table-chips">
-                <img height="20px" width="20px" src="../static/poker-token.png" alt=""> 
-                <span id="pot">null</span> | 
-                <img height="20px" width="20px" src="../static/poker-piece.png" alt=""> 
-                <span id="table-stake">null</span></p>
-            </div>
-        </div>
 
-        <div class="pocket-cards">
-            <div id="pocket-1" class="outline shadow rounded">
-                <div class="top">
-                    <span id="pocket-1-rank-1">A</span>
-                    <span id="pocket-1-suit-1">&hearts;</span>
+            <div class="pocket-cards">
+                <div id="pocket-1" class="outline shadow rounded">
+                    <div class="top">
+                        <span id="pocket-1-rank-1">A</span>
+                        <span id="pocket-1-suit-1">&hearts;</span>
+                    </div>
+                
+                    <h1 id="pocket-1-suit-2">&hearts;</h1>
+                
+                    <div class="bottom">
+                        <span id="pocket-1-suit-3">&hearts;</span>
+                        <span id="pocket-1-rank-2">A</span>
+                    </div>
                 </div>
-            
-                <h1 id="pocket-1-suit-2">&hearts;</h1>
-            
-                <div class="bottom">
-                    <span id="pocket-1-suit-3">&hearts;</span>
-                    <span id="pocket-1-rank-2">A</span>
+                <div id="pocket-2" class="outline shadow rounded">
+                    <div class="top">
+                        <span id="pocket-2-rank-1">A</span>
+                        <span id="pocket-2-suit-1">&hearts;</span>
+                    </div>
+                
+                    <h1 id="pocket-2-suit-2">&hearts;</h1>
+                
+                    <div class="bottom">
+                        <span id="pocket-2-suit-3">&hearts;</span>
+                        <span id="pocket-2-rank-2">A</span>
+                    </div>
+                </div>
+                <br>
+                <div id="user-chips">
+                    <img height="20px" width="20px" src="../static/poker-token.png" alt=""> 
+                        <span id="yourChips">null</span> | 
+                    <img height="20px" width="20px" src="../static/poker-piece.png" alt=""> 
+                        <span id="yourStake">null</span></p>
                 </div>
             </div>
-            <div id="pocket-2" class="outline shadow rounded">
-                <div class="top">
-                    <span id="pocket-2-rank-1">A</span>
-                    <span id="pocket-2-suit-1">&hearts;</span>
-                </div>
             
-                <h1 id="pocket-2-suit-2">&hearts;</h1>
             
-                <div class="bottom">
-                    <span id="pocket-2-suit-3">&hearts;</span>
-                    <span id="pocket-2-rank-2">A</span>
+
+
+
+
+            <div class="display">
+
+                <div id="display-one" style="display: none;">
+                    <button type="button" class="btn btn-secondary btn-lg" onclick="check()">Check</button>
+                    <button type="button" class="btn btn-secondary btn-lg" onclick="raise()">Raise</button>
+                    <button type="button" class="btn btn-secondary btn-lg" onclick="fold()">Fold</button>
                 </div>
-            </div>
-            <br>
-            <div class="user-chips">
-                <img height="20px" width="20px" src="../static/poker-token.png" alt=""> 
-                    <span id="yourChips">null</span> | 
-                <img height="20px" width="20px" src="../static/poker-piece.png" alt=""> 
-                    <span id="yourStake">null</span></p>
-            </div>
-        </div>
         
-        
+                <div id="display-two" style="display: none;">
+                    <button type="button" class="btn btn-secondary btn-lg" onclick="call()">Call</button>
+                    <button type="button" class="btn btn-secondary btn-lg" onclick="raise()">Raise</button>
+                    <button type="button" class="btn btn-secondary btn-lg" onclick="fold()">Fold</button>
+                </div>
 
-
-
-
-        <div class="display">
-
-            <div id="display-one" style="display: none;">
-                <button type="button" class="btn btn-secondary btn-lg" onclick="check()">Check</button>
-                <button type="button" class="btn btn-secondary btn-lg" onclick="raise()">Raise</button>
-                <button type="button" class="btn btn-secondary btn-lg" onclick="fold()">Fold</button>
             </div>
-    
-            <div id="display-two" style="display: none;">
-                <button type="button" class="btn btn-secondary btn-lg" onclick="call()">Call</button>
-                <button type="button" class="btn btn-secondary btn-lg" onclick="raise()">Raise</button>
-                <button type="button" class="btn btn-secondary btn-lg" onclick="fold()">Fold</button>
-            </div>
-
-        </div>
-        
-</body>
+            
+    </body>
 </html>
 
 <style>
 
-body {
-    margin: 1rem;
-    background-color: #eee;
-    font-family: sans-serif;
-}
+    body {
+        margin: 1rem;
+        background-color: #eee;
+        font-family: sans-serif;
+    }
 
-.user-chips, .table-chips {
-    margin-top: 2rem;
-}
+    #wait-banner {
+        text-align: center;
+        margin-top: 20rem;
+    }
 
-.display {
-    margin-top: 5rem;
-    text-align: center;
-}
+    #wait-time {
+        text-align: center;
+        margin-top: 20rem;
+        display: none;
+    }
 
-.active-players {
-    margin-top: 15vh;
-}
+    #wait-notif, #wait-time {
+        text-align: center;
+        display: none;
+    }
 
-.community-cards {
-    text-align: center;
-}
+    #user-chips, #table-chips {
+        margin-top: 2rem;
+        display: none;
+    }
 
-#whos-turn-p, #winning-banner, #tie-winning-banner {
-    display: none;
-    text-align: center;
-}
+    .display {
+        margin-top: 5rem;
+        text-align: center;
+    }
 
-#community-1,
-#community-2,
-#community-3,
-#community-4,
-#community-5 {
-    display: none;
-}
+    .active-players {
+        margin-top: 15vh;
+    }
 
-.pocket-cards {
-    margin-top: 10vh;
-    text-align: center;
-}
+    .community-cards {
+        text-align: center;
+    }
 
-#pocket-1, #pocket-2 {
-    display: none;
-}
+    #whos-turn-p, #winning-banner, #tie-winning-banner {
+        display: none;
+        text-align: center;
+    }
 
-.table {
-    margin: 1.5vw;
-    padding: 2em;
-    width: 96.5vw;
-    height: 80vh;
-    display: inline-block;
-    background-color: #142752;
-    box-shadow: 0 0.0625em 0.125em rgba(0, 0, 0, 0.15);
-    border-radius: 0.25em;
-    text-align: center;
-}
+    #community-1,
+    #community-2,
+    #community-3,
+    #community-4,
+    #community-5 {
+        display: none;
+    }
 
-.red {
-    color: rgb(206, 18, 18);
-}
+    .pocket-cards {
+        margin-top: 10vh;
+        text-align: center;
+    }
 
-.outline { 
-    width: 110px; 
-    border: 0px solid black; 
-    text-align: center; 
-    padding: 10px; 
-    margin: 10px; 
-    background: #FFF ;
-    display: inline-block;
-}
+    #pocket-1, #pocket-2 {
+        display: none;
+    }
 
-.top { 
-    text-align: left; 
-}
+    .table {
+        margin: 1.5vw;
+        padding: 2em;
+        width: 96.5vw;
+        height: 80vh;
+        display: inline-block;
+        background-color: #142752;
+        box-shadow: 0 0.0625em 0.125em rgba(0, 0, 0, 0.15);
+        border-radius: 0.25em;
+        text-align: center;
+    }
 
-.bottom { 
-    text-align: right; 
-}
- 
-.shadow { 
-    box-shadow: 1px 1px 3px #000; 
-    -moz-box-shadow: 1px 1px 3px #000; 
-    -webkit-box-shadow: 1px 1px 3px #000; 
-}
+    .red {
+        color: rgb(206, 18, 18);
+    }
 
-.rounded { 
-    border-radius:10px; 
-    -moz-border-radius:10px; 
-    -webkit-border-radius:10px; 
-}
+    .outline { 
+        width: 110px; 
+        border: 0px solid black; 
+        text-align: center; 
+        padding: 10px; 
+        margin: 10px; 
+        background: #FFF ;
+        display: inline-block;
+    }
+
+    .top { 
+        text-align: left; 
+    }
+
+    .bottom { 
+        text-align: right; 
+    }
+    
+    .shadow { 
+        box-shadow: 1px 1px 3px #000; 
+        -moz-box-shadow: 1px 1px 3px #000; 
+        -webkit-box-shadow: 1px 1px 3px #000; 
+    }
+
+    .rounded { 
+        border-radius:10px; 
+        -moz-border-radius:10px; 
+        -webkit-border-radius:10px; 
+    }
 
 </style>

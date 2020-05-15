@@ -17,7 +17,17 @@ active_connections = []
 def main_handler(connections, num_players):
     print('Starting game!')
 
-    table = Table()
+    try:
+        table = Table.instances[0]
+    except:
+        table = Table()
+
+    if table.active_game:
+        emit('wait-notif')
+        return
+    else:
+        table.active_game = True
+
 
     while table.active_game:
         table.instantiate_players(connections)
@@ -35,20 +45,10 @@ def main_handler(connections, num_players):
 
         return table.determine_winner()
 
-
-
-
 @app.route('/')
 def index():
     # print(request.__dict__['sid'])
     return render_template('index.html')
-
-def check_for_capacity():
-    num_players = len(active_connections)
-    if num_players < 3:
-        return
-    
-    main_handler(active_connections, num_players)
 
 @socketio.on('connect')
 def connect():
@@ -56,10 +56,8 @@ def connect():
 
 @socketio.on('backend handshake')
 def handshake(user_data):
-    print('Request SID 2: ', request.sid)
     user_data['sid'] = request.sid
     emit('frontend handshake', user_data)
-
 
 @socketio.on('register user')
 def register_username(data):
@@ -73,9 +71,36 @@ def register_username(data):
     check_for_capacity()
     send('Registered ' + username + ' with room ' + room)
 
+def check_for_capacity():
+    num_players = len(active_connections)
+    if num_players < 3:
+        emit('queue-add', {
+            'active_connections': ', '.join([connection['username'] for connection in active_connections]),
+            'num_connections': len(active_connections)
+        }, broadcast=True)
+        return
+
+    main_handler(active_connections, num_players)
+
+@socketio.on('restart-game')
+def restart():
+    time.sleep(2)
+    game_cleanup()
+    time.sleep(3)
+    check_for_capacity()
+
+def game_cleanup():
+    Table.instances = []
+    Player.instances = []
+    emit('game-cleanup', broadcast=True)
+
 @socketio.on('disconnect')
-def test_disconnect():
-    print('Client disconnected.')
+def disconnect():
+    connection = request.sid
+
+    for entry in active_connections:
+        if connection == entry['sid']:
+            active_connections.remove(entry)
 
 @socketio.on('start game')
 def start_game(data):
