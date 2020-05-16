@@ -71,7 +71,7 @@ def register_username(data):
 
 def check_for_capacity():
     num_players = len(active_connections)
-    if num_players < int(os.environ.get('NUM_PLAYERS')):
+    if num_players < 3:
         emit('queue-add', {
             'active_connections': ', '.join([connection['username'] for connection in active_connections]),
             'num_connections': len(active_connections)
