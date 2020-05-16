@@ -9,7 +9,7 @@ import json
 from maps import best_hand_map, rank_map, cpu_aggressiveness_map
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'secret!'
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
 socketio = SocketIO(app)
 
 active_connections = []
@@ -47,7 +47,6 @@ def main_handler(connections, num_players):
 
 @app.route('/')
 def index():
-    # print(request.__dict__['sid'])
     return render_template('index.html')
 
 @socketio.on('connect')
@@ -66,14 +65,13 @@ def register_username(data):
     username = data['username']
     room = data['sid']
     join_room(room)
-    
     active_connections.append(data)
     check_for_capacity()
     send('Registered ' + username + ' with room ' + room)
 
 def check_for_capacity():
     num_players = len(active_connections)
-    if num_players < 3:
+    if num_players < int(os.environ.get('NUM_PLAYERS')):
         emit('queue-add', {
             'active_connections': ', '.join([connection['username'] for connection in active_connections]),
             'num_connections': len(active_connections)
