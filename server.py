@@ -25,9 +25,10 @@ def main_handler(connections, num_players):
         table = Table()
 
     if table.active_game:
-        emit('wait-notif')
-        send('Chat is temporarily disabled until next game.')
-        return
+        if not Player.get_player(id=request['sid']):
+            emit('wait-notif')
+            send('Chat is temporarily disabled until next game.')
+            return
     else:
         table.active_game = True
 
