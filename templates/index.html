@@ -33,7 +33,7 @@
     })
 
     socket.on('queue-add', function(data) {
-        let remaining_connections = (3 - data.num_connections)
+        let remaining_connections = (2 - data.num_connections)
 
         updateDiv('activePlayers', data.active_connections)
         updateDiv('remaining-connections', remaining_connections)
@@ -51,7 +51,8 @@
         let pocket_2 = player.attributes.hand[1]
         updateCard(pocket_1, 1, 'pocket', 'pocket-1')    
         updateCard(pocket_2, 2, 'pocket', 'pocket-2') 
-        document.getElementById('user-chips').style.display = 'block'   
+        document.getElementById('user-chips').style.display = 'block' 
+        document.getElementById('whos-turn-p').style.display = 'block';  
     })
 
     socket.on('flop', function(flop_data) {
@@ -67,8 +68,8 @@
         updateDiv('activePlayers', flop_data.active_players)
         document.getElementById('wait-time').style.display = 'none';
         document.getElementById('wait-banner').style.display = 'none';
-        document.getElementById('whos-turn-p').style.display = 'block';
         document.getElementById('table-chips').style.display = 'block';
+        document.getElementById('container').style.display = 'block';
 
     })
 
@@ -101,6 +102,7 @@
         document.getElementById('tie-winning-banner').style.display = 'none';
         document.getElementById('table-chips').style.display = 'none';
         document.getElementById('user-chips').style.display = 'none';
+        document.getElementById('container').style.display = 'none';
 
         const cleanupCards = [
             'pocket-1',
@@ -131,18 +133,35 @@
 
     })
 
+    let start = null
+
     socket.on('toggle-display', function(display_data) {
+
+        if (start == null) {
+            start = new Date().getTime() / 1000
+        }
+        let time_elapsed = ((new Date().getTime() / 1000) - start);
+
+        if (time_elapsed > 15) {
+            timeout()
+        }
+
         let display_type = display_data.display_type
 
         if (display_type == 'one') {
             document.getElementById('display-one').style.display = 'block';
+            document.getElementById('whos-turn-p').style.display = 'none';
+
         } else if (display_type == 'two') {
             document.getElementById('display-two').style.display = 'block';
+            document.getElementById('whos-turn-p').style.display = 'none';
         } else if (display_type == 'three') {
             document.getElementById('display-one').style.display = 'none';
             document.getElementById('display-two').style.display = 'none';
+            document.getElementById('whos-turn-p').style.display = 'block';
             updateDiv('yourStake', display_data.attributes.stake)
             updateDiv('yourChips', display_data.attributes.chips)
+            start = null
         }
 
     })
@@ -225,6 +244,12 @@
         })
     }
 
+    function timeout() {
+        socket.emit('timeout', {
+            message: 'Timed out'
+        })
+    }
+
     function call() {
         socket.emit('call', {
             message: 'I call'
@@ -281,14 +306,14 @@
 
             <p>Active Players: <span id="activePlayers"></span></p>
             <hr>
-            <h2 id="wait-banner">Waiting for <span id="remaining-connections" class="red">3</span> more players.</h2>
+            <h2 id="wait-banner">Waiting for <span id="remaining-connections" class="red">2</span> more players.</h2>
             <h5 id="wait-time">New game in 3 seconds.</h5>
 
-            <div class="container">
+            <div id="container" class="container">
 
                 <div class="row">
 
-                    <div class="col-md-4">
+                    <div id="chat-container" class="col-xl-4 col-md-4">
                         <div id="chat-room" class="shadow rounded">
                             <div id="message-history">
                                 <div id="message-history-content">
@@ -302,6 +327,7 @@
                             </div>
 
                         </div>
+                        <h4 id="whos-turn-p">It's <span id='whos-turn' class="red"></span>'s turn.</h4>
                         <div class="display">
 
                             <div id="display-one" style="display: none;">
@@ -315,13 +341,11 @@
                                 <button type="button" class="btn btn-secondary btn-lg" onclick="raise()">Raise</button>
                                 <button type="button" class="btn btn-secondary btn-lg" onclick="fold()">Fold</button>
                             </div>
-            
                         </div>
 
                     </div>
-                    <div class="col-md-8">
+                    <div id="game-display" class="col-xl-8 col-md-8">
                         <h4 id="wait-notif">Please wait until the current game ends.</h4>
-                        <h4 id="whos-turn-p">It's <span id='whos-turn' class="red"></span>'s turn.</h4>
                         <h2 id="winning-banner" style="display: none;"><span id="winner" class="red"></span> won the pot!</h2>
                         <h2 id="tie-winning-banner" style="display: none;">Tie! <span class="red" id="winner-1"></span> and <span class="red" id="winner-2"></span> will split the pot at <span id="half-pot"></span> chips each.</h2>
                         <div class="community-cards">
@@ -463,6 +487,10 @@
         height: 80%
     }
 
+    #game-display {
+        margin: auto auto;
+        justify-content: center;
+    }
 
     #message-history-content {
         position: absolute;
@@ -486,8 +514,14 @@
         display: inline-block;
     }
 
-    .chat-container {
-        border: 1px solid rgb(85, 83, 83);
+    #chat-container {
+        margin-top: 5vh;
+        justify-content: center;
+    }
+
+    #container {
+        display: none;
+        justify-content: center;
     }
 
     body {
@@ -498,7 +532,7 @@
 
     #wait-banner {
         text-align: center;
-        margin-top: 20rem;
+        margin-top: 30vh;
     }
 
     #wait-time {
@@ -530,7 +564,13 @@
         text-align: center;
     }
 
-    #whos-turn-p, #winning-banner, #tie-winning-banner {
+    #whos-turn-p {
+        text-align: center;
+        display: none;
+        margin-top: 1.5rem;
+    }
+    
+    #winning-banner, #tie-winning-banner {
         display: none;
         text-align: center;
     }

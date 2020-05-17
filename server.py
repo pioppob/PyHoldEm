@@ -12,10 +12,6 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
 socketio = SocketIO(app)
 
-# TODO: Message/Chatroom
-# TODO: Move button-display to side to avoid scroll
-# TODO: Move timer
-
 active_connections = []
 
 def main_handler(connections, num_players):
@@ -76,7 +72,7 @@ def register_username(data):
 
 def check_for_capacity():
     num_players = len(active_connections)
-    if num_players < 3:
+    if num_players < 2:
         emit('queue-add', {
             'active_connections': ', '.join([connection['username'] for connection in active_connections]),
             'num_connections': len(active_connections)
@@ -148,6 +144,24 @@ def on_fold(data):
     }, room=player.id)
 
     send(username + ' has folded!', broadcast=True)
+
+@socketio.on('timeout')
+def on_timeout(data):
+    username = session['identifier']['username']
+
+    table = Table.instances[0]
+    player = Player.get_player(name=username)
+
+    player._fold(table)
+
+    emit('toggle-display', {
+        'display_type': 'three',
+        'attributes': player.__dict__
+    }, room=player.id)
+
+    send(username + ' took too long!', broadcast=True)
+    send(username + ' folded!', broadcast=True)
+
 
 @socketio.on('raise')
 def on_raise(data):
