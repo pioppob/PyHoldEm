@@ -28,6 +28,7 @@ def main_handler(connections, num_players):
 
     if table.active_game:
         emit('wait-notif')
+        send('Chat is temporarily disabled until next game.')
         return
     else:
         table.active_game = True
@@ -70,8 +71,8 @@ def register_username(data):
     room = data['sid']
     join_room(room)
     active_connections.append(data)
+    send(username + ' has joined the chat!', broadcast=True)
     check_for_capacity()
-    send('Registered ' + username + ' with room ' + room)
 
 def check_for_capacity():
     num_players = len(active_connections)
@@ -111,8 +112,10 @@ def start_game(data):
 
 @socketio.on('message')
 def handle_message(message):
-    print('Received message: ', message)
-    send(message, broadcast=True)
+    player = Player.get_player(id=request.sid)
+    body = f'{player.name}: {message}'
+    send(body, broadcast=True)
+
 
 @socketio.on('check')
 def on_check(data):
@@ -161,7 +164,7 @@ def on_raise(data):
         'attributes': player.__dict__
     }, room=player.id)
 
-    send(username + ' has raised!', broadcast=True)
+    send(username + ' has raised ' + amount_to_raise + '!', broadcast=True)
 
 @socketio.on('call')
 def on_call(data):
@@ -177,7 +180,7 @@ def on_call(data):
         'attributes': player.__dict__
     }, room=player.id)
 
-    send(username + ' has called!', broadcast=True)
+    send(username + ' called!', broadcast=True)
 
 if __name__ == '__main__':
     socketio.run(app)
