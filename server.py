@@ -12,6 +12,10 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
 socketio = SocketIO(app)
 
+# TODO: Message/Chatroom
+# TODO: Move button-display to side to avoid scroll
+# TODO: Move timer
+
 active_connections = []
 
 def main_handler(connections, num_players):
