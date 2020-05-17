@@ -1,1 +1,1 @@
-web: python3 server.py
+web: gunicorn -w 1 server:app --worker-class eventlet --reload
