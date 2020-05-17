@@ -64,9 +64,12 @@ class Table:
     def instantiate_players(self, connections):
 
         if len(connections) > 8:
-            raise Exception('This game supports a maximum of 8 players.')
+            wait_queue = connections[8:]
+            for player in wait_queue:
+                emit('wait-queue', room=connection['sid'])
 
-        for connection in connections:
+
+        for connection in connections[:8]:
             name = connection['username']
             id = connection['sid']
             player = Player(id, name, 1000000)
@@ -215,9 +218,10 @@ class Table:
         self._end_game()
 
     def _end_game(self):
+        print('In end game')
         self.unfulfilled_action = None
         self.active_game = False
-        emit('restart-game')
+        emit('restart-game', broadcast=True)
 
     def _get_active_players(self):
         return self.active_players

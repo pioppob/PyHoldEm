@@ -35,12 +35,19 @@
     socket.on('queue-add', function(data) {
         let remaining_connections = (2 - data.num_connections)
 
+        document.getElementById('wait-time').style.display = 'none'
+        document.getElementById('wait-banner').style.display = 'block'
         updateDiv('activePlayers', data.active_connections)
         updateDiv('remaining-connections', remaining_connections)
     })
 
     socket.on('wait-notif', function() {
         document.getElementById('wait-notif').style.display = 'block'
+    })
+
+    socket.on('wait-queue', function() {
+        document.getElementById('wait-queue-msg').style.display = 'block'
+        document.getElementById('wait-notif').style.display = 'none'
     })
 
     socket.on('deal', function(player) {
@@ -92,6 +99,7 @@
     })
 
     socket.on('restart-game', function() {
+        console.log('In restart-game')
         socket.emit('restart-game')
     })
 
@@ -133,18 +141,7 @@
 
     })
 
-    let start = null
-
     socket.on('toggle-display', function(display_data) {
-
-        if (start == null) {
-            start = new Date().getTime() / 1000
-        }
-        let time_elapsed = ((new Date().getTime() / 1000) - start);
-
-        if (time_elapsed > 15) {
-            timeout()
-        }
 
         let display_type = display_data.display_type
 
@@ -161,7 +158,6 @@
             document.getElementById('whos-turn-p').style.display = 'block';
             updateDiv('yourStake', display_data.attributes.stake)
             updateDiv('yourChips', display_data.attributes.chips)
-            start = null
         }
 
     })
@@ -241,12 +237,6 @@
     function fold() {
         socket.emit('fold', {
             message: 'I fold'
-        })
-    }
-
-    function timeout() {
-        socket.emit('timeout', {
-            message: 'Timed out'
         })
     }
 
@@ -346,6 +336,7 @@
                     </div>
                     <div id="game-display" class="col-xl-8 col-md-8">
                         <h4 id="wait-notif">Please wait until the current game ends.</h4>
+                        <h5 id="wait-queue-msg">The table is currently at capacity (<span class="red">8</span>). <br /> Please wait until another spot opens.</h5>
                         <h2 id="winning-banner" style="display: none;"><span id="winner" class="red"></span> won the pot!</h2>
                         <h2 id="tie-winning-banner" style="display: none;">Tie! <span class="red" id="winner-1"></span> and <span class="red" id="winner-2"></span> will split the pot at <span id="half-pot"></span> chips each.</h2>
                         <div class="community-cards">
@@ -549,6 +540,11 @@
     #user-chips, #table-chips {
         margin-top: 2rem;
         display: none;
+    }
+
+    #wait-queue-msg {
+        display: none;
+        text-align: center;
     }
 
     .display {

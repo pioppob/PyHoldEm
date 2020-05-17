@@ -8,6 +8,8 @@ import time
 import json
 from maps import best_hand_map, rank_map, cpu_aggressiveness_map
 
+# TODO: Fix Timeout bug
+
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
 socketio = SocketIO(app)
@@ -97,6 +99,22 @@ def game_cleanup():
 def disconnect():
     connection = request.sid
 
+    player = Player.get_player(id=connection)
+
+    if not player:
+        pass    
+    elif player.active:
+        table = Table.instances[0]
+
+        player._fold(table)
+
+        emit('toggle-display', {
+            'display_type': 'three',
+            'attributes': player.__dict__
+        }, room=player.id)
+
+        send(player.name + ' has folded!', broadcast=True)
+
     for entry in active_connections:
         if connection == entry['sid']:
             active_connections.remove(entry)
@@ -144,24 +162,6 @@ def on_fold(data):
     }, room=player.id)
 
     send(username + ' has folded!', broadcast=True)
-
-@socketio.on('timeout')
-def on_timeout(data):
-    username = session['identifier']['username']
-
-    table = Table.instances[0]
-    player = Player.get_player(name=username)
-
-    player._fold(table)
-
-    emit('toggle-display', {
-        'display_type': 'three',
-        'attributes': player.__dict__
-    }, room=player.id)
-
-    send(username + ' took too long!', broadcast=True)
-    send(username + ' folded!', broadcast=True)
-
 
 @socketio.on('raise')
 def on_raise(data):
