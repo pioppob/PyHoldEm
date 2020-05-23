@@ -3,8 +3,13 @@ A Texas Hold'Em Game built in Python
 
 ![Frontend](https://github.com/pioppob/PyHoldEm/blob/Multiplayer/static/demo.png)
 
-How to play:
-1. Clone this repository to your local machine. (git clone https:// ...)
+How to play (Multiplayer web-app)
+1. Head to https://pyholdem.herokuapp.com with a friend.
+2. Enter your username into the prompt
+3. Play!
+
+How to play (Single player TUI):
+1. Clone the master branch of this repository to your local machine. (git clone https:// ...)
 2. Change directory (cd) to the PyHoldEm directory.
 3. Run python3 poker.py
 
